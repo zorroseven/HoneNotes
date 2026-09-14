@@ -1,0 +1,12 @@
+# Normalize text files in the repo
+* text=auto
+
+# Mac scripts and sources must keep Unix line endings or bash/swiftc choke on them
+*.sh text eol=lf
+*.swift text eol=lf
+
+# Windows scripts
+*.ps1 text eol=crlf
+
+*.ico binary
+*.exe binary
