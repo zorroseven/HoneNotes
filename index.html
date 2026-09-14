@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hone Notes</title>
+<style>
+:root{
+  --bg:#131a2b; --panel:#1b2339; --panel2:#222b45; --line:#2d3856; --text:#e7eaf3; --muted:#8e98b3;
+  --accent:#3f7cf0; --accent2:#5a8ff5; --danger:#e5484d; --ok:#35c28a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.brand{padding:18px 16px 10px}
+.brand h1{margin:0;font-size:17px;font-weight:650}
+.brand .shift{color:var(--muted);font-size:12px;margin-top:2px}
+.add{padding:6px 12px 10px;margin:0}
+.add input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--text);font:inherit;outline:none}
+.add input:focus{border-color:var(--accent)}
+#people{flex:1;overflow:auto;padding:4px 8px}
+.person{display:flex;align-items:center;gap:8px;width:100%;border-radius:8px;padding:9px 10px;margin-bottom:2px;cursor:pointer;user-select:none;outline:none}
+.person .rename{flex:1;min-width:0;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--text);font:inherit;padding:1px 6px;margin:-2px 0;outline:none}
+#ctx{position:fixed;z-index:70;min-width:180px;background:var(--panel2);border:1px solid #3a4770;border-radius:9px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.5);white-space:nowrap}
+#ctx button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:7px 12px}
+#ctx button:hover{background:var(--accent);color:#fff}
+#ctx button.danger:hover{background:var(--danger)}
+#ctx hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.person:hover{background:var(--panel2)}
+.person.active{background:var(--accent);color:#fff}
+.person .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font-size:11px;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.08);color:var(--muted)}
+.person.active .pill{background:rgba(255,255,255,.22);color:#fff}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.dot.off{visibility:hidden}
+.people-empty{color:var(--muted);font-size:13px;padding:10px}
+.side-foot{padding:12px;border-top:1px solid var(--line);display:grid;gap:8px}
+
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:#40507a;background:#28324f}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.btn.danger:hover{border-color:var(--danger);color:#ff8589}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+
+main{overflow:auto;min-height:0;position:relative}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 32px 40px}
+.empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+.empty h2{color:var(--text);font-weight:600;margin:0 0 6px}
+kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:12px;color:var(--text)}
+
+.head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+#name{flex:1;min-width:200px;background:none;border:1px solid transparent;border-radius:8px;color:var(--text);font-family:inherit;font-size:22px;font-weight:600;padding:4px 8px;margin-left:-8px;outline:none}
+#name:hover{border-color:var(--line)}
+#name:focus{border-color:var(--accent);background:var(--bg)}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.label .hint{text-transform:none;letter-spacing:0}
+
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.shot{position:relative;aspect-ratio:16/10;background:#0c1120;border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:zoom-in}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;-webkit-user-drag:none;pointer-events:none}
+.shot.dragging{opacity:.3;outline:2px dashed var(--accent);outline-offset:-2px}
+.shots.sorting .shot{cursor:grabbing}
+.shots.sorting .shot .acts{opacity:0}
+.shot .num{position:absolute;left:6px;top:6px;font-size:11px;font-weight:600;background:rgba(0,0,0,.7);padding:1px 7px;border-radius:5px}
+.shot .time{position:absolute;left:6px;bottom:6px;font-size:11px;background:rgba(0,0,0,.7);padding:1px 6px;border-radius:5px}
+.shot .acts{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .12s}
+.shot:hover .acts{opacity:1}
+.icon{width:28px;height:28px;border-radius:6px;border:0;background:rgba(10,14,26,.85);display:grid;place-items:center;color:#fff;padding:0}
+.icon:hover{background:var(--accent)}
+.icon.del:hover{background:var(--danger)}
+.shot.new{animation:pop .6s ease}
+@keyframes pop{0%{transform:scale(.92);box-shadow:0 0 0 3px var(--accent)}100%{transform:none;box-shadow:0 0 0 0 transparent}}
+.paste{aspect-ratio:16/10;border:1.5px dashed var(--line);border-radius:8px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;padding:8px;cursor:pointer}
+.paste:hover{border-color:#40507a;color:var(--text)}
+.btn.sm{padding:4px 10px;font-size:12px}
+main.drag .paste{border-color:var(--accent);color:var(--text);background:rgba(63,124,240,.08)}
+
+textarea{width:100%;min-height:300px;resize:vertical;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:var(--text);font-family:inherit;font-size:14.5px;line-height:1.6;outline:none}
+textarea:focus{border-color:var(--accent)}
+
+#lb{position:fixed;inset:0;background:rgba(5,8,16,.94);display:flex;flex-direction:column;z-index:50}
+#lb .bar{display:flex;align-items:center;gap:8px;padding:10px 14px}
+#lb .info{flex:1;color:var(--muted)}
+#lb .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 64px 20px;position:relative}
+#lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:18px}
+.nav:hover{background:var(--panel2)}
+.nav.prev{left:12px}.nav.next{right:12px}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#2a3553;border:1px solid #3a4770;padding:9px 14px;border-radius:9px;display:flex;gap:14px;align-items:center;opacity:0;pointer-events:none;transition:.18s;z-index:60;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+#toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#toast button{background:none;border:0;color:#8fb3ff;font-weight:600;padding:0}
+
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h3{margin:0 0 8px}
+dialog p{color:var(--muted);margin:0 0 18px}
+.dlg-btns{display:grid;gap:8px}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="brand"><h1>Hone Notes</h1><div class="shift" id="shift"></div></div>
+    <form class="add" id="addForm"><input id="newName" placeholder="+ Add person (name or email)" autocomplete="off" spellcheck="false"></form>
+    <div id="people"></div>
+    <div class="side-foot">
+      <button class="btn primary" id="exportAll">Save all reports to folder</button>
+      <button class="btn ghost sm" id="changeFolder">Change save folder…</button>
+      <button class="btn danger" id="newShift">Clear everything…</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="empty" id="empty">
+      <div>
+        <h2>No one selected</h2>
+        <p>Add a person on the left, then paste screenshots with <kbd class="mod">Ctrl</kbd> + <kbd>V</kbd>.</p>
+      </div>
+    </div>
+    <div class="wrap" id="view" hidden>
+      <div class="head">
+        <input id="name" spellcheck="false" title="Click to rename">
+        <button class="btn primary" id="copyReport">Copy report</button>
+        <button class="btn" id="copyNotes">Copy notes</button>
+        <button class="btn" id="exportOne">Save to folder</button>
+        <button class="btn ghost danger" id="delPerson">Delete</button>
+      </div>
+      <div class="label">
+        <span>Screenshots <span id="shotCount"></span></span>
+        <span class="hint"><span class="mod">Ctrl</span>+V anywhere · drag screenshots to reorder <button class="btn sm" id="addFiles">Add images…</button></span>
+      </div>
+      <input type="file" id="filePick" accept="image/*" multiple hidden>
+      <div class="shots" id="shots"></div>
+      <div class="label"><span>Notes</span><span class="hint" id="status"></span></div>
+      <textarea id="notes" placeholder="Write your notes on this person…"></textarea>
+    </div>
+  </main>
+</div>
+
+<div id="lb" hidden>
+  <div class="bar">
+    <span class="info" id="lbInfo"></span>
+    <button class="btn" id="lbCopy">Copy image</button>
+    <button class="btn danger" id="lbDel">Delete</button>
+    <button class="btn" id="lbClose">Close (Esc)</button>
+  </div>
+  <div class="stage">
+    <button class="nav prev" id="lbPrev" title="Previous (←)">‹</button>
+    <img id="lbImg" alt="">
+    <button class="nav next" id="lbNext" title="Next (→)">›</button>
+  </div>
+</div>
+
+<div id="toast"><span id="toastMsg"></span><button id="toastAct" hidden></button></div>
+<div id="ctx" hidden></div>
+
+<dialog id="shiftDlg">
+  <h3>Clear Hone Notes?</h3>
+  <p>Starts a fresh shift. You'll get an Undo button (or <span class="mod">Ctrl</span>+Z) for 20 seconds afterwards, in case you change your mind.</p>
+  <form method="dialog" class="dlg-btns">
+    <button class="btn danger" value="all">Delete everything (people, notes, screenshots)</button>
+    <button class="btn danger" value="keep">Clear notes &amp; screenshots, keep names</button>
+    <button class="btn" value="cancel">Cancel</button>
+  </form>
+</dialog>
+
+<script>
+const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const MODKEY = IS_MAC ? 'Cmd' : 'Ctrl';       // what we show the user
+const modDown = e => e.ctrlKey || e.metaKey;  // Ctrl on Windows, Cmd on Mac
+const $ = s => document.querySelector(s);
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const hhmm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const ymd = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const ICON_COPY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+const ICON_DEL = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+
+let db, people = [], shots = [], activeId = null, shiftStart;
+const urls = new Map();
+const urlFor = s => { if (!urls.has(s.id)) urls.set(s.id, URL.createObjectURL(s.blob)); return urls.get(s.id); };
+const active = () => people.find(p => p.id === activeId);
+const shotsOf = id => shots.filter(s => s.personId === id);
+const sortShots = () => shots.sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
+
+/* ---------- storage (IndexedDB) ---------- */
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('hone-notes', 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      d.createObjectStore('people', { keyPath: 'id' });
+      d.createObjectStore('shots', { keyPath: 'id' });
+      d.createObjectStore('meta');
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function write(stores, fn) {
+  return new Promise((res, rej) => {
+    const t = db.transaction(stores, 'readwrite');
+    fn(t);
+    t.oncomplete = () => res();
+    t.onerror = t.onabort = () => rej(t.error);
+  });
+}
+const put = (store, val, key) => write(store, t => t.objectStore(store).put(val, key));
+function read(store, method, arg) {
+  return new Promise((res, rej) => {
+    const r = db.transaction(store).objectStore(store)[method](arg);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+
+async function init() {
+  db = await openDB();
+  navigator.storage?.persist?.();
+  people = (await read('people', 'getAll')).sort((a, b) => a.createdAt - b.createdAt);
+  shots = await read('shots', 'getAll');
+  sortShots();
+  shiftStart = await read('meta', 'get', 'shiftStart');
+  if (!shiftStart) { shiftStart = Date.now(); await put('meta', shiftStart, 'shiftStart'); }
+  const last = await read('meta', 'get', 'activeId');
+  activeId = people.some(p => p.id === last) ? last : people[0]?.id ?? null;
+  render();
+}
+
+// Show Cmd on Mac, Ctrl on Windows, in the static labels
+document.querySelectorAll('.mod').forEach(el => { el.textContent = MODKEY; });
+$('#copyReport').title = `Copies the notes + all screenshots at once (or press ${MODKEY}+C)`;
+
+/* ---------- rendering ---------- */
+function render() {
+  const d = new Date(shiftStart);
+  $('#shift').textContent = `Shift started ${d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}, ${hhmm(shiftStart)}`;
+  renderPeople();
+  renderMain();
+}
+
+let renaming = null;
+function renderPeople() {
+  if (renaming) return; // don't wipe the rename box mid-edit; commitRename re-renders
+  const box = $('#people');
+  if (!people.length) { box.innerHTML = '<div class="people-empty">No people yet. Type a name above and press Enter.</div>'; return; }
+  box.innerHTML = people.map(p => {
+    const n = shotsOf(p.id).length;
+    return `<div class="person${p.id === activeId ? ' active' : ''}" data-id="${p.id}" title="Double-click to rename · right-click for options">
+      <span class="dot${p.notes.trim() ? '' : ' off'}" title="Has notes"></span>
+      <span class="nm">${esc(p.name || 'Unnamed')}</span>
+      ${n ? `<span class="pill">${n}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderMain() {
+  const p = active();
+  $('#empty').hidden = !!p;
+  $('#view').hidden = !p;
+  if (!p) return;
+  $('#name').value = p.name;
+  $('#notes').value = p.notes;
+  $('#status').textContent = p.updatedAt ? `Saved ${hhmm(p.updatedAt)}` : '';
+  renderShots();
+}
+
+function renderShots(newId) {
+  const list = shotsOf(activeId);
+  $('#shotCount').textContent = list.length ? `(${list.length})` : '';
+  $('#shots').innerHTML = list.map((s, i) => `
+    <div class="shot${s.id === newId ? ' new' : ''}" data-id="${s.id}" draggable="true">
+      <img src="${urlFor(s)}" alt="" draggable="false">
+      <span class="num">${i + 1}</span>
+      <span class="time">${hhmm(s.createdAt)}</span>
+      <div class="acts">
+        <button class="icon" data-act="copy" title="Copy image">${ICON_COPY}</button>
+        <button class="icon del" data-act="del" title="Delete">${ICON_DEL}</button>
+      </div>
+    </div>`).join('') + `<div class="paste" id="pasteTile">Press <b>${MODKEY} + V</b> to paste<br>or click to add image files</div>`;
+}
+
+let toastTimer, undoFn = null;
+function hideToast() { $('#toast').classList.remove('show'); undoFn = null; }
+function toast(msg, actionLabel, action, ms) {
+  $('#toastMsg').textContent = msg;
+  const b = $('#toastAct');
+  b.hidden = !actionLabel;
+  undoFn = null;
+  if (actionLabel) {
+    const run = () => { hideToast(); action(); };
+    b.textContent = actionLabel;
+    b.onclick = run;
+    if (actionLabel === 'Undo') undoFn = run;
+  }
+  $('#toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, ms || (actionLabel ? 8000 : 2500));
+}
+
+/* ---------- people ---------- */
+async function select(id) {
+  await flushNotes();
+  activeId = id;
+  put('meta', id, 'activeId');
+  renderPeople();
+  renderMain();
+}
+
+$('#addForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('#newName').value.trim();
+  if (!name) return;
+  const p = { id: uid(), name, notes: '', createdAt: Date.now() };
+  people.push(p);
+  await put('people', p);
+  $('#newName').value = '';
+  await select(p.id);
+});
+
+const peopleBox = $('#people');
+// Double-click is detected by hand: the first click can redraw the list, which stops
+// the browser from recognising the second click as a double-click.
+let lastClick = { id: null, t: 0 };
+peopleBox.addEventListener('click', e => {
+  const row = e.target.closest('.person');
+  if (!row || e.target.closest('.rename')) return;
+  const id = row.dataset.id, now = Date.now();
+  if (lastClick.id === id && now - lastClick.t < 500) {
+    lastClick = { id: null, t: 0 };
+    startRename(id);
+    return;
+  }
+  lastClick = { id, t: now };
+  if (id !== activeId) select(id);
+});
+
+/* ---------- rename in sidebar ---------- */
+function startRename(id) {
+  const p = people.find(x => x.id === id);
+  if (!p) return;
+  renaming = null;
+  renderPeople();
+  renaming = id;
+  const nm = peopleBox.querySelector(`.person[data-id="${id}"] .nm`);
+  const input = document.createElement('input');
+  input.className = 'rename';
+  input.value = p.name;
+  input.spellcheck = false;
+  nm.replaceWith(input);
+  input.focus();
+  input.select();
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commitRename(input.value); }
+    else if (e.key === 'Escape') { e.stopPropagation(); renaming = null; renderPeople(); }
+  });
+  input.addEventListener('blur', () => commitRename(input.value));
+}
+async function commitRename(value) {
+  if (!renaming) return;
+  const p = people.find(x => x.id === renaming);
+  renaming = null;
+  const v = value.trim();
+  if (p && v && v !== p.name) {
+    p.name = v;
+    await put('people', p);
+    if (p.id === activeId) $('#name').value = p.name;
+    toast(`Renamed to ${v}`);
+  }
+  renderPeople();
+}
+$('#name').addEventListener('dblclick', e => e.target.select());
+
+$('#name').addEventListener('input', () => {
+  const p = active();
+  p.name = $('#name').value;
+  renderPeople();
+});
+$('#name').addEventListener('change', () => {
+  const p = active();
+  p.name = $('#name').value.trim() || 'Unnamed';
+  $('#name').value = p.name;
+  put('people', p);
+  renderPeople();
+});
+$('#name').addEventListener('keydown', e => { if (e.key === 'Enter') $('#notes').focus(); });
+
+async function deletePerson(p) {
+  await flushNotes();
+  const theirs = shotsOf(p.id);
+  const idx = people.indexOf(p);
+  await write(['people', 'shots'], t => {
+    t.objectStore('people').delete(p.id);
+    theirs.forEach(s => t.objectStore('shots').delete(s.id));
+  });
+  shots = shots.filter(s => s.personId !== p.id);
+  people.splice(idx, 1);
+  if (activeId === p.id) await select(people[Math.min(idx, people.length - 1)]?.id ?? null);
+  else renderPeople();
+  toast(`Deleted ${p.name}`, 'Undo', async () => {
+    people.splice(Math.min(idx, people.length), 0, p);
+    shots.push(...theirs);
+    sortShots();
+    await write(['people', 'shots'], t => {
+      t.objectStore('people').put(p);
+      theirs.forEach(s => t.objectStore('shots').put(s));
+    });
+    await select(p.id);
+    toast(`Restored ${p.name}`);
+  });
+}
+$('#delPerson').addEventListener('click', () => deletePerson(active()));
+
+/* ---------- notes (autosave) ---------- */
+let saveTimer = null;
+$('#notes').addEventListener('input', () => {
+  const p = active();
+  p.notes = $('#notes').value;
+  $('#status').textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushNotes, 400);
+});
+async function flushNotes() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer); saveTimer = null;
+  const p = active();
+  if (!p) return;
+  p.updatedAt = Date.now();
+  await put('people', p);
+  if (p.id === activeId) $('#status').textContent = `Saved ${hhmm(p.updatedAt)}`;
+  renderPeople();
+}
+window.addEventListener('beforeunload', () => { flushNotes(); });
+
+$('#copyNotes').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(active().notes);
+  toast('Notes copied');
+});
+
+const blobToDataUrl = blob => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = () => rej(r.error);
+  r.readAsDataURL(blob);
+});
+
+// HoneNotes.exe keeps a small helper in the tray. It puts screenshots on the clipboard as real
+// image files (what upload boxes accept) and makes the next Ctrl+V paste notes + screenshots.
+const HELPER = 'http://localhost:47831';
+const helperKey = new URLSearchParams(location.hash.slice(1)).get('k');
+
+async function copyViaHelper(notes, list) {
+  if (!helperKey) return { ok: false, error: 'nokey' };
+  try {
+    const images = await Promise.all(list.map(async (s, i) => ({
+      name: `${i + 1}.${extOf(s.blob.type)}`,
+      data: (await blobToDataUrl(s.blob)).split(',')[1],
+    })));
+    const r = await fetch(HELPER + '/copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ token: helperKey, text: notes, images }),
+    });
+    return await r.json();
+  } catch {
+    return { ok: false, error: 'offline' };
+  }
+}
+
+async function copyReport(p) {
+  await flushNotes();
+  const list = shotsOf(p.id);
+  const notes = p.notes.trim();
+  const n = `${list.length} screenshot${list.length === 1 ? '' : 's'}`;
+  if (!list.length && !notes) return toast('Nothing to copy yet');
+  if (!list.length) {
+    await navigator.clipboard.writeText(notes);
+    return toast('Notes copied (no screenshots)');
+  }
+
+  const res = await copyViaHelper(notes, list);
+  if (res.ok) {
+    return toast(res.both
+      ? `Report copied. Press ${MODKEY}+V in the website to paste ${notes ? 'the notes + ' : ''}${n}`
+      : `${n} copied. Press ${MODKEY}+V in the website${notes ? ', then use Copy notes for the text' : ''}`, null, null, 6000);
+  }
+
+  // Helper not reachable: rich-text copy (works in some editors, not in upload boxes)
+  try {
+    const imgs = await Promise.all(list.map(s => blobToDataUrl(s.blob)));
+    const html = (notes ? `<div>${esc(notes).replace(/\n/g, '<br>')}</div>` : '') +
+      imgs.map(src => `<p><img src="${src}"></p>`).join('');
+    const item = {
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([notes], { type: 'text/plain' }),
+    };
+    // A single screenshot can also go on as a plain image, which almost every site accepts
+    if (list.length === 1) item['image/png'] = await toPng(list[0].blob);
+    await navigator.clipboard.write([new ClipboardItem(item)]);
+    toast('Copied, but screenshots may not paste into websites. Close Hone Notes and open it again from the desktop icon.', null, null, 8000);
+  } catch (err) {
+    toast("Couldn't copy report: " + err.message);
+  }
+}
+$('#copyReport').addEventListener('click', () => copyReport(active()));
+
+/* ---------- screenshots ---------- */
+async function addShots(files) {
+  const p = active();
+  if (!p) { toast('Add or pick a person first'); $('#newName').focus(); return; }
+  let last;
+  const now = Date.now();
+  for (const [i, f] of files.entries()) {
+    const s = { id: uid(), personId: p.id, blob: new Blob([f], { type: f.type || 'image/png' }), createdAt: now + i, order: now + i };
+    shots.push(s);
+    await put('shots', s);
+    last = s.id;
+  }
+  renderShots(last);
+  renderPeople();
+  toast(`${files.length > 1 ? files.length + ' screenshots' : 'Screenshot'} added to ${p.name}`);
+}
+
+document.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.items || [])]
+    .filter(i => i.kind === 'file' && i.type.startsWith('image/'))
+    .map(i => i.getAsFile()).filter(Boolean);
+  if (!files.length) return;
+  e.preventDefault();
+  addShots(files);
+});
+
+$('#addFiles').onclick = () => $('#filePick').click();
+$('#filePick').addEventListener('change', e => {
+  const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (files.length) addShots(files);
+});
+
+// Dropping image files from Explorer (not reordering, which is handled on the grid)
+const main = $('#main');
+const hasFiles = e => [...e.dataTransfer.types].includes('Files');
+main.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); main.classList.add('drag'); });
+main.addEventListener('dragleave', e => { if (!main.contains(e.relatedTarget)) main.classList.remove('drag'); });
+main.addEventListener('drop', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  main.classList.remove('drag');
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (files.length) addShots(files);
+});
+
+async function toPng(blob) {
+  if (blob.type === 'image/png') return blob;
+  const img = await createImageBitmap(blob);
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
+async function copyShot(s) {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': await toPng(s.blob) })]);
+    toast('Image copied, paste it wherever you need');
+  } catch (err) {
+    toast("Couldn't copy image: " + err.message);
+  }
+}
+
+async function deleteShot(s) {
+  await write('shots', t => t.objectStore('shots').delete(s.id));
+  shots = shots.filter(x => x !== s);
+  if (s.personId === activeId) renderShots();
+  renderPeople();
+  toast('Screenshot deleted', 'Undo', async () => {
+    shots.push(s);
+    sortShots();
+    await put('shots', s);
+    if (s.personId === activeId) renderShots();
+    renderPeople();
+  });
+}
+
+const grid = $('#shots');
+grid.addEventListener('click', e => {
+  if (e.target.closest('#pasteTile')) return $('#filePick').click();
+  const tile = e.target.closest('.shot');
+  if (!tile) return;
+  const list = shotsOf(activeId);
+  const i = list.findIndex(s => s.id === tile.dataset.id);
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'copy') copyShot(list[i]);
+  else if (act === 'del') deleteShot(list[i]);
+  else openLb(i);
+});
+
+/* ---------- drag to reorder ---------- */
+let dragEl = null;
+grid.addEventListener('dragstart', e => {
+  const tile = e.target.closest('.shot');
+  if (!tile) return;
+  dragEl = tile;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/x-hone-shot', tile.dataset.id);
+  requestAnimationFrame(() => { tile.classList.add('dragging'); grid.classList.add('sorting'); });
+});
+grid.addEventListener('dragover', e => {
+  if (!dragEl) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const over = e.target.closest('.shot');
+  if (!over || over === dragEl) return;
+  const tiles = [...grid.querySelectorAll('.shot')];
+  if (tiles.indexOf(over) > tiles.indexOf(dragEl)) over.after(dragEl);
+  else over.before(dragEl);
+});
+grid.addEventListener('drop', e => { if (dragEl) e.preventDefault(); });
+grid.addEventListener('dragend', async () => {
+  if (!dragEl) return;
+  dragEl.classList.remove('dragging');
+  grid.classList.remove('sorting');
+  dragEl = null;
+  const ids = [...grid.querySelectorAll('.shot')].map(t => t.dataset.id);
+  const list = shotsOf(activeId);
+  if (ids.every((id, i) => list[i].id === id)) return;
+  const byId = new Map(list.map(s => [s.id, s]));
+  ids.forEach((id, i) => { byId.get(id).order = i; });
+  sortShots();
+  renderShots();
+  await write('shots', t => ids.forEach(id => t.objectStore('shots').put(byId.get(id))));
+});
+
+/* ---------- lightbox ---------- */
+let lbIndex = 0;
+function openLb(i) {
+  const list = shotsOf(activeId);
+  if (!list.length) return closeLb();
+  lbIndex = (i + list.length) % list.length;
+  const s = list[lbIndex];
+  $('#lbImg').src = urlFor(s);
+  $('#lbInfo').textContent = `${active().name} · ${lbIndex + 1} of ${list.length} · pasted ${hhmm(s.createdAt)}`;
+  $('#lb').hidden = false;
+}
+const closeLb = () => { $('#lb').hidden = true; };
+const lbShot = () => shotsOf(activeId)[lbIndex];
+$('#lbClose').onclick = closeLb;
+$('#lbPrev').onclick = () => openLb(lbIndex - 1);
+$('#lbNext').onclick = () => openLb(lbIndex + 1);
+$('#lbCopy').onclick = () => copyShot(lbShot());
+$('#lbDel').onclick = async () => {
+  await deleteShot(lbShot());
+  openLb(Math.min(lbIndex, shotsOf(activeId).length - 1));
+};
+$('#lb .stage').addEventListener('click', e => { if (e.target.classList.contains('stage')) closeLb(); });
+
+/* ---------- export ---------- */
+const safeName = s => s.replace(/[\\/:*?"<>|]/g, '_').replace(/[. ]+$/, '').trim().slice(0, 80) || 'Unnamed';
+const extOf = type => ({ 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/bmp': 'bmp' }[type] || 'png');
+const shotFile = (s, i) => `${pad(i + 1)}_${hhmm(s.createdAt).replace(':', '')}.${extOf(s.blob.type)}`;
+const GENERATED = /^(report\.txt|\d{2,}_\d{4}\.(png|jpg|gif|webp|bmp))$/i;
+
+function reportText(p) {
+  const n = shotsOf(p.id).length;
+  return `HONE REPORT: ${p.name}\nShift: ${ymd(shiftStart)}\nScreenshots: ${n}\n\n${p.notes.trim() || '(no notes)'}\n`;
+}
+
+async function writeFile(dir, name, data) {
+  const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+  await w.write(data);
+  await w.close();
+}
+
+async function exportPeople(list) {
+  await flushNotes();
+  if (!list.length) return toast('Nothing to export yet');
+  const folder = `Hone reports ${ymd(shiftStart)}`;
+
+  if (!window.showDirectoryPicker) {
+    // Fallback for browsers without folder access: plain downloads
+    for (const p of list) {
+      download(new Blob([reportText(p)], { type: 'text/plain' }), `${safeName(p.name)} - report.txt`);
+      shotsOf(p.id).forEach((s, i) => download(s.blob, `${safeName(p.name)} - ${shotFile(s, i)}`));
+    }
+    return toast('Files downloaded');
+  }
+
+  const root = await exportRoot();
+  if (!root) return;
+  try {
+    const shiftDir = await root.getDirectoryHandle(folder, { create: true });
+    const used = new Set();
+    for (const p of list) {
+      let base = safeName(p.name), name = base, k = 2;
+      while (used.has(name.toLowerCase())) name = `${base} (${k++})`;
+      used.add(name.toLowerCase());
+      const dir = await shiftDir.getDirectoryHandle(name, { create: true });
+      // Replace files from a previous export so the folder matches what's in the app
+      for await (const [entry, handle] of dir.entries())
+        if (handle.kind === 'file' && GENERATED.test(entry)) await dir.removeEntry(entry);
+      await writeFile(dir, 'report.txt', reportText(p));
+      const ps = shotsOf(p.id);
+      for (let i = 0; i < ps.length; i++) await writeFile(dir, shotFile(ps[i], i), ps[i].blob);
+    }
+    if (list.length > 1)
+      await writeFile(shiftDir, 'ALL REPORTS.txt', list.map(reportText).join('\n' + '-'.repeat(60) + '\n\n'));
+    toast(`Saved ${list.length} report${list.length > 1 ? 's' : ''} to "${root.name}\\${folder}"`);
+  } catch (err) {
+    toast('Export failed: ' + err.message);
+  }
+}
+
+// Remembers the chosen folder so later exports are one click
+async function exportRoot(forcePick) {
+  let root = forcePick ? null : await read('meta', 'get', 'exportDir');
+  if (root) {
+    const opts = { mode: 'readwrite' };
+    if (await root.queryPermission(opts) !== 'granted' && await root.requestPermission(opts) !== 'granted') root = null;
+  }
+  if (!root) {
+    try {
+      root = await showDirectoryPicker({ id: 'hone-export', mode: 'readwrite', startIn: 'documents' });
+    } catch (err) {
+      if (err.name !== 'AbortError') toast('Export failed: ' + err.message);
+      return null;
+    }
+    await put('meta', root, 'exportDir');
+  }
+  return root;
+}
+
+$('#changeFolder').onclick = async () => {
+  if (!window.showDirectoryPicker) return toast('Folder saving not supported in this browser');
+  const root = await exportRoot(true);
+  if (root) toast(`Reports will be saved in "${root.name}"`);
+};
+
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+$('#exportAll').onclick = () => exportPeople(people);
+$('#exportOne').onclick = () => exportPeople([active()]);
+
+/* ---------- new shift ---------- */
+$('#newShift').onclick = async () => {
+  await flushNotes();
+  $('#shiftDlg').showModal();
+};
+$('#shiftDlg').addEventListener('close', async () => {
+  const mode = $('#shiftDlg').returnValue;
+  if (mode !== 'keep' && mode !== 'all') return;
+  const snap = { people: people.map(p => ({ ...p })), shots: [...shots], shiftStart, activeId };
+  shots = [];
+  if (mode === 'all') people = [];
+  else people.forEach(p => { p.notes = ''; delete p.updatedAt; });
+  shiftStart = Date.now();
+  await write(['people', 'shots', 'meta'], t => {
+    t.objectStore('shots').clear();
+    const ps = t.objectStore('people');
+    ps.clear();
+    people.forEach(p => ps.put(p));
+    t.objectStore('meta').put(shiftStart, 'shiftStart');
+  });
+  if (!people.some(p => p.id === activeId)) activeId = people[0]?.id ?? null;
+  render();
+  toast(mode === 'all' ? 'Everything deleted' : 'Notes & screenshots cleared', 'Undo', () => restoreSnapshot(snap), 20000);
+});
+
+async function restoreSnapshot(snap) {
+  await flushNotes();
+  // Keep anything added after the clear, put the old data back on top
+  const oldPeople = new Set(snap.people.map(p => p.id));
+  const oldShots = new Set(snap.shots.map(s => s.id));
+  people = [...snap.people, ...people.filter(p => !oldPeople.has(p.id))];
+  shots = [...snap.shots, ...shots.filter(s => !oldShots.has(s.id))];
+  sortShots();
+  shiftStart = snap.shiftStart;
+  activeId = snap.activeId;
+  await write(['people', 'shots', 'meta'], t => {
+    const ps = t.objectStore('people'), ss = t.objectStore('shots'), meta = t.objectStore('meta');
+    ps.clear(); people.forEach(p => ps.put(p));
+    ss.clear(); shots.forEach(s => ss.put(s));
+    meta.put(shiftStart, 'shiftStart');
+    meta.put(activeId, 'activeId');
+  });
+  render();
+  toast('Everything restored');
+}
+
+/* ---------- right-click menu ---------- */
+const ctx = $('#ctx');
+function showMenu(x, y, items) {
+  ctx.innerHTML = items.map((it, i) => it === '-' ? '<hr>' :
+    `<button data-i="${i}"${it.danger ? ' class="danger"' : ''}>${esc(it.label)}</button>`).join('');
+  ctx.onclick = e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    hideMenu();
+    items[+b.dataset.i].run();
+  };
+  ctx.hidden = false;
+  const r = ctx.getBoundingClientRect();
+  ctx.style.left = Math.max(4, Math.min(x, innerWidth - r.width - 6)) + 'px';
+  ctx.style.top = Math.max(4, Math.min(y, innerHeight - r.height - 6)) + 'px';
+}
+const hideMenu = () => { ctx.hidden = true; };
+
+document.addEventListener('contextmenu', e => {
+  const row = e.target.closest('.person');
+  const tile = e.target.closest('.shot');
+  if (row && !e.target.closest('.rename')) {
+    e.preventDefault();
+    const p = people.find(x => x.id === row.dataset.id);
+    showMenu(e.clientX, e.clientY, [
+      { label: 'Rename', run: () => startRename(p.id) },
+      { label: 'Copy report (notes + screenshots)', run: () => copyReport(p) },
+      { label: 'Copy notes', run: async () => { await navigator.clipboard.writeText(p.notes); toast('Notes copied'); } },
+      { label: 'Save to folder', run: () => exportPeople([p]) },
+      '-',
+      { label: `Delete ${p.name}`, danger: true, run: () => deletePerson(p) },
+    ]);
+  } else if (tile) {
+    e.preventDefault();
+    const list = shotsOf(activeId);
+    const i = list.findIndex(s => s.id === tile.dataset.id);
+    showMenu(e.clientX, e.clientY, [
+      { label: 'Open', run: () => openLb(i) },
+      { label: 'Copy image', run: () => copyShot(list[i]) },
+      '-',
+      { label: 'Delete screenshot', danger: true, run: () => deleteShot(list[i]) },
+    ]);
+  } else {
+    hideMenu();
+  }
+});
+document.addEventListener('mousedown', e => { if (!e.target.closest?.('#ctx')) hideMenu(); });
+window.addEventListener('blur', hideMenu);
+main.addEventListener('scroll', hideMenu);
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !ctx.hidden) { hideMenu(); return; }
+  // Ctrl/Cmd+Z undoes the last delete/clear, unless you're undoing typing in a text box
+  if (modDown(e) && e.key.toLowerCase() === 'z' && undoFn && !e.target.matches('input, textarea')) {
+    e.preventDefault();
+    undoFn();
+    return;
+  }
+  if (!$('#lb').hidden) {
+    if (e.key === 'Escape') closeLb();
+    else if (e.key === 'ArrowLeft') openLb(lbIndex - 1);
+    else if (e.key === 'ArrowRight') openLb(lbIndex + 1);
+    else if (e.key === 'Delete') $('#lbDel').click();
+    else if (modDown(e) && e.key.toLowerCase() === 'c') { e.preventDefault(); copyShot(lbShot()); }
+    return;
+  }
+  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && people.length) {
+    e.preventDefault();
+    const i = people.findIndex(p => p.id === activeId);
+    const next = people[(i + (e.key === 'ArrowDown' ? 1 : -1) + people.length) % people.length];
+    select(next.id);
+  }
+  if (e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); $('#newName').focus(); }
+  // Ctrl/Cmd+C outside a text box (and with nothing highlighted) copies the whole report
+  if (modDown(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'c' && active() &&
+      !e.target.matches('input, textarea') && !String(getSelection())) {
+    e.preventDefault();
+    copyReport(active());
+  }
+});
+
+init().catch(err => {
+  document.body.innerHTML = `<div class="empty"><div><h2>Couldn't open storage</h2><p>${esc(err.message)}</p></div></div>`;
+});
+</script>
+</body>
+</html>

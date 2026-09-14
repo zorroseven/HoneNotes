@@ -1,0 +1,10 @@
+# Build output — upload finished builds to GitHub Releases instead of committing them
+dist/
+/HoneNotes.exe
+mac/dist/
+mac/*.zip
+
+# OS / editor clutter
+Thumbs.db
+.DS_Store
+.vscode/
