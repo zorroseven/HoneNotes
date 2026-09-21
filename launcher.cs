@@ -27,6 +27,7 @@ static class HoneNotes
     static readonly string InstallDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "HoneNotes");
     static readonly string InstalledExe = Path.Combine(InstallDir, "HoneNotes.exe");
     static readonly string PagePath = Path.Combine(InstallDir, "index.html");
+    static readonly string DevMarker = Path.Combine(InstallDir, "dev-source.txt");
 
     static string token;
     static SynchronizationContext ui;
@@ -90,7 +91,6 @@ static class HoneNotes
                 return;
             }
 
-            if (openBrowser) ExtractPage();
             token = fixedToken ?? Guid.NewGuid().ToString("N");
             Application.EnableVisualStyles();
             win = new ClipWindow();
@@ -218,17 +218,41 @@ static class HoneNotes
         }
     }
 
+    // A dev-source.txt next to the exe holds the path of a checkout to take index.html from,
+    // so editing the page there is live on the next open with no rebuild. build.ps1 writes it.
+    // Anywhere else the file is absent and the page built into the exe is used.
+    static string DevPage()
+    {
+        try
+        {
+            if (!File.Exists(DevMarker)) return null;
+            string dir = File.ReadAllText(DevMarker).Trim().Trim('"');
+            if (dir.Length == 0) return null;
+            string page = Path.Combine(dir, "index.html");
+            return File.Exists(page) ? page : null;
+        }
+        catch { return null; }
+    }
+
     // The app page is built into the exe; keep the copy on disk in sync with it
     static void ExtractPage()
     {
         try
         {
             byte[] bytes;
-            using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("HoneNotes.index.html"))
-            using (var ms = new MemoryStream())
+            string dev = DevPage();
+            if (dev != null)
             {
-                s.CopyTo(ms);
-                bytes = ms.ToArray();
+                bytes = File.ReadAllBytes(dev);
+            }
+            else
+            {
+                using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("HoneNotes.index.html"))
+                using (var ms = new MemoryStream())
+                {
+                    s.CopyTo(ms);
+                    bytes = ms.ToArray();
+                }
             }
             if (File.Exists(PagePath) && SameBytes(File.ReadAllBytes(PagePath), bytes)) return;
             Directory.CreateDirectory(InstallDir);
@@ -249,6 +273,7 @@ static class HoneNotes
 
     static void LaunchBrowser(string key)
     {
+        ExtractPage(); // picks up an edited dev source without a rebuild
         if (!File.Exists(PagePath))
         {
             MessageBox.Show("Hone Notes couldn't find its app page.\nPlease run the Hone Notes download again.", "Hone Notes");

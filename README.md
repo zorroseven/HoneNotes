@@ -16,14 +16,32 @@ Run `HoneNotes.exe` from anywhere (e.g. Downloads). It installs itself to
 To update, run a newer `HoneNotes.exe` the same way — it closes the running copy and replaces it.
 Notes are kept.
 
+Windows shows "Windows protected your PC" the first time, because the exe isn't code-signed.
+Click **More info**, then **Run anyway**.
+
 ### Build
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Produces `dist\HoneNotes.exe` with `index.html` and `icon.ico` built in. Uses the C# compiler that
-ships with Windows, so nothing extra needs installing.
+Produces `dist\HoneNotes.exe` with `index.html` and `icon.ico` built in, then installs it, so the
+Desktop / Start menu / pinned shortcuts run what you just built. Uses the C# compiler that ships
+with Windows, so nothing extra needs installing.
+
+Add `-NoInstall` to only produce `dist\HoneNotes.exe` without touching the installed copy, which is
+what you want when building a file to attach to a Release.
+
+### Editing the page
+
+Installing also writes `dev-source.txt` into the install folder, holding the path of this checkout.
+While that file is there the app reads `index.html` from the checkout every time it opens, so
+editing the page is live on the next open — no rebuild, no reinstall. Rebuild only when you change
+`launcher.cs`, or to produce an exe for someone else.
+
+Delete `dev-source.txt` to go back to the page built into the exe. Anywhere the file is absent —
+every machine that installs a Release — the built-in page is used, so this stays a local
+convenience and never ships.
 
 ### Troubleshooting
 
