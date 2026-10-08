@@ -10,20 +10,26 @@ a tray app on Windows, a menu-bar app on Mac — so the page can put real image 
 
 ### Install / update
 
-Open PowerShell (Start → type "PowerShell"), paste this and press Enter:
+Download `HoneNotes.exe` from the latest [Release](../../releases) and run it. It installs itself to
+`%LOCALAPPDATA%\Programs\HoneNotes`, adds Desktop and Start menu shortcuts, and starts.
+
+Windows shows "Windows protected your PC" the first time, because the exe isn't code-signed.
+Click **More info**, then **Run anyway**.
+
+To update, run a newer `HoneNotes.exe` the same way — it closes the running copy and replaces it.
+Notes are kept.
+
+### If Smart App Control blocks it
+
+On a PC with Windows 11's Smart App Control turned on, the unsigned exe is blocked outright, with no
+"Run anyway". There, install the script version instead, which runs the same code without an exe:
+paste this into PowerShell.
 
 ```powershell
 irm https://raw.githubusercontent.com/zorroseven/HoneNotes/main/install.ps1 | iex
 ```
 
-It installs to `%LOCALAPPDATA%\Programs\HoneNotes`, adds Desktop and Start menu shortcuts, and
-starts. To update, run the same line again — it closes the running copy and replaces it. Notes are kept.
-
-This installs Hone Notes as a PowerShell script ([HoneNotes.ps1](HoneNotes.ps1), which compiles
-[launcher.cs](launcher.cs) in memory) rather than an exe, because Windows 11's Smart App Control
-blocks the unsigned `HoneNotes.exe` outright, with no "Run anyway". On a PC without Smart App
-Control the exe from a [Release](../../releases) still works: run it from anywhere and click
-**More info** → **Run anyway** at the "Windows protected your PC" prompt.
+The real fix is code-signing the exe, which Smart App Control lets through.
 
 ### Build
 
