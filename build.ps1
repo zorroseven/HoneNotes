@@ -39,6 +39,16 @@ $want = (Get-FileHash dist\HoneNotes.exe -Algorithm SHA256).Hash
 New-Item -ItemType Directory -Force $installDir | Out-Null
 [IO.File]::WriteAllText((Join-Path $installDir 'dev-source.txt'), $PSScriptRoot)
 
+# Smart App Control (state 1 = on) blocks the unsigned exe outright, so install HoneNotes.ps1
+# instead: the same launcher.cs, compiled in memory by PowerShell each time it starts.
+$sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
+if ($sac -eq 1) {
+    & (Join-Path $PSScriptRoot 'install.ps1')
+    Write-Host "Smart App Control is on, so installed the script version instead of the exe"
+    Write-Host "Live page:   $PSScriptRoot\index.html (edit it, then just reopen Hone Notes)"
+    return
+}
+
 Start-Process -FilePath (Join-Path $PSScriptRoot 'dist\HoneNotes.exe')
 
 # The install hands off to a new process, so wait for the copy on disk to match this build

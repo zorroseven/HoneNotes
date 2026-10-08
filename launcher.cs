@@ -19,7 +19,9 @@ using System.Windows.Forms;
 // - Run from the install folder: writes the built-in index.html next to itself, opens it in
 //   Edge/Chrome app mode, and stays in the tray so "Copy report" can put screenshots on the clipboard
 //   as real image files and paste notes + each screenshot with a single Ctrl+V.
-static class HoneNotes
+// - Run with --hosted (by HoneNotes.ps1, which compiles this file in memory): skips installing and
+//   runs in place, for machines where Smart App Control blocks the unsigned exe.
+public static class HoneNotes
 {
     const int Port = 47831;
     static readonly string BaseUrl = "http://localhost:" + Port + "/";
@@ -59,19 +61,20 @@ static class HoneNotes
     }
 
     [STAThread]
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
-        bool openBrowser = true, silent = false;
+        bool openBrowser = true, silent = false, hosted = false;
         string fixedToken = null;
         foreach (string a in args)
         {
             if (a == "--no-browser") openBrowser = false;
             else if (a == "--silent") silent = true;
+            else if (a == "--hosted") hosted = true;
             else if (a.StartsWith("--token=")) fixedToken = a.Substring(8);
         }
 
-        // Test mode (--no-browser) runs in place; everything else goes through the install folder
-        if (openBrowser && !SamePath(Application.ExecutablePath, InstalledExe))
+        // Test mode (--no-browser) and hosted mode run in place; everything else goes through the install folder
+        if (openBrowser && !hosted && !SamePath(Application.ExecutablePath, InstalledExe))
         {
             Install(silent);
             return;
@@ -115,7 +118,9 @@ static class HoneNotes
             thread.Start();
 
             var tray = new NotifyIcon();
-            tray.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            // Hosted, the process is powershell.exe, so take the icon from the file installed beside the script
+            string ico = Path.Combine(InstallDir, "icon.ico");
+            tray.Icon = hosted && File.Exists(ico) ? new Icon(ico) : Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             tray.Text = "Hone Notes";
             var menu = new ContextMenuStrip();
             menu.Items.Add("Open Hone Notes", null, (s, e) => LaunchBrowser(token));
@@ -250,6 +255,7 @@ static class HoneNotes
                 using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("HoneNotes.index.html"))
                 using (var ms = new MemoryStream())
                 {
+                    if (s == null) return; // hosted: no built-in page, install.ps1 put index.html on disk
                     s.CopyTo(ms);
                     bytes = ms.ToArray();
                 }
